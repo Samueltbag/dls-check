@@ -4,7 +4,6 @@ const STORAGE_KEY_API = "dls_yt_api_key";
 const STORAGE_KEY_STATUS = "dls_ep_status_map"; // Guarda os status: 'watching' | 'completed'
 
 let apiKey = localStorage.getItem(STORAGE_KEY_API) || "";
-// Objeto com mapeamento: { "videoId": "watching" | "completed" }
 let statusMap = JSON.parse(localStorage.getItem(STORAGE_KEY_STATUS) || "{}");
 let currentFilter = "all"; // 'all' | 'unstarted' | 'watching' | 'completed'
 
@@ -128,7 +127,7 @@ function renderFeed(episodes) {
 
     let cardBg = "bg-zinc-900 border-zinc-800";
     let btnStyle = "bg-zinc-800 text-zinc-400 hover:bg-zinc-700";
-    let btnIcon = "○";
+    let btnIcon = "+";
     let badgeHtml = "";
 
     if (status === "watching") {
@@ -153,7 +152,7 @@ function renderFeed(episodes) {
         ${badgeHtml}
         <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-snug break-words">${ep.title}</h2>
       </div>
-      <button onclick="cycleStatus('${ep.id}')" class="flex-shrink-0 px-3 py-3 text-sm font-bold rounded-lg transition-colors ${btnStyle}" title="Alternar status">
+      <button onclick="cycleStatus('${ep.id}')" class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-sm font-bold rounded-lg transition-colors ${btnStyle}" title="Alternar status">
         ${btnIcon}
       </button>
     `;
