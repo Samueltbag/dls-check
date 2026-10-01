@@ -6,6 +6,7 @@
   <title>DLS Check</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#121212">
+  <link rel="apple-touch-icon" href="https://www.youtube.com/s/desktop/f7193f2f/img/favicon_144x144.png">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans pb-10">
@@ -31,5 +32,11 @@
   </main>
 
   <script src="app.js"></script>
+  <script>
+    // Registro do Service Worker para permitir instalação nativa
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW erro:', err));
+    }
+  </script>
 </body>
 </html>
