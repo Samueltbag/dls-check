@@ -6,14 +6,18 @@
   <title>DLS Check</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#121212">
-  <link rel="apple-touch-icon" href="https://www.youtube.com/s/desktop/f7193f2f/img/favicon_144x144.png">
+  <link rel="icon" type="image/jpeg" href="icon.jpg">
+  <link rel="apple-touch-icon" href="icon.jpg">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen font-sans pb-10">
 
-  <!-- Header -->
+  <!-- Header com a Logo do Canal -->
   <header class="p-4 bg-zinc-900 border-b border-zinc-800 sticky top-0 z-10 flex justify-between items-center shadow-lg">
-    <h1 class="text-lg font-bold text-red-500">DLS Check</h1>
+    <div class="flex items-center gap-2.5">
+      <img src="icon.jpg" alt="Logo DLS" class="w-8 h-8 rounded-full border border-zinc-700 object-cover">
+      <h1 class="text-lg font-bold text-red-500">DLS Check</h1>
+    </div>
     <div class="flex gap-2">
       <button id="btn-config" class="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300">Config API</button>
       <button id="btn-sync" class="px-3 py-1 text-xs bg-red-600 hover:bg-red-500 rounded font-semibold">Atualizar</button>
@@ -33,7 +37,6 @@
 
   <script src="app.js"></script>
   <script>
-    // Registro do Service Worker para permitir instalação nativa
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(err => console.log('SW erro:', err));
     }
