@@ -1,5 +1,5 @@
 // Configurações e Chaves
-const PLAYLIST_ID = "PLaUTz-QvZS37jBnXDKxwUPnK3FN1EnNQC"; // ID da Playlist de Uploads do Desce a Letra Show (UU + final do channel ID)
+const PLAYLIST_ID = "PLaUTz-QvZS37jBnXDKxwUPnK3FN1EnNQC"; // Playlist da Quinta Temporada do DLS
 const STORAGE_KEY_API = "dls_yt_api_key";
 const STORAGE_KEY_WATCHED = "dls_watched_ids";
 
@@ -23,7 +23,7 @@ function promptApiKey() {
   }
 }
 
-// Salva o progresso no localStorage
+// Alterna o status de assistido e salva localmente
 function toggleWatched(videoId) {
   if (watchedIds.has(videoId)) {
     watchedIds.delete(videoId);
@@ -31,96 +31,90 @@ function toggleWatched(videoId) {
     watchedIds.add(videoId);
   }
   localStorage.setItem(STORAGE_KEY_WATCHED, JSON.stringify(Array.from(watchedIds)));
-  fetchEpisodes(); // Re-renderiza atualizando a lista
+  // Atualiza apenas a interface mantendo os dados em memória
+  if (window.currentEpisodes) {
+    renderFeed(window.currentEpisodes);
+  } else {
+    fetchEpisodes();
+  }
 }
 
-// Busca episódios da API do YouTube
+// Busca TODOS os episódios da playlist do YouTube (tratando paginação)
 async function fetchEpisodes() {
   if (!apiKey) {
-    statsContainer.innerHTML = `⚠️️ Cadastre sua <b>API Key</b> do Google Cloud no botão acima para começar.`;
+    statsContainer.innerHTML = `⚠ Cadastre sua <b>API Key</b> do Google Cloud no botão acima para começar.`;
     return;
   }
 
-  statsContainer.innerText = "Buscando episódios do YouTube...";
+  statsContainer.innerText = "Buscando episódios da 5ª Temporada...";
 
   try {
-    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${PLAYLIST_ID}&maxResults=50&key=${apiKey}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    let allItems = [];
+    let nextPageToken = "";
 
-    if (data.error) {
-      alert("Erro na API: " + data.error.message);
-      return;
-    }
+    // Loop para buscar todas as páginas de vídeos da playlist
+    do {
+      const pageParam = nextPageToken ? `&pageToken=${nextPageToken}` : "";
+      const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${PLAYLIST_ID}&maxResults=50${pageParam}&key=${apiKey}`;
+      
+      const res = await fetch(url);
+      const data = await res.json();
 
-    const items = data.items.map(item => ({
-      id: item.snippet.resourceId.videoId,
-      title: item.snippet.title,
-      publishedAt: item.snippet.publishedAt,
-      thumb: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url
-    }));
+      if (data.error) {
+        alert("Erro na API: " + data.error.message);
+        return;
+      }
 
-    renderFeed(items);
+      const pageItems = data.items.map(item => ({
+        id: item.snippet.resourceId.videoId,
+        title: item.snippet.title,
+        publishedAt: item.snippet.publishedAt,
+        thumb: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url
+      }));
+
+      allItems = allItems.concat(pageItems);
+      nextPageToken = data.nextPageToken || "";
+
+    } while (nextPageToken);
+
+    window.currentEpisodes = allItems;
+    renderFeed(allItems);
   } catch (err) {
     statsContainer.innerText = "Erro ao carregar dados da API.";
     console.error(err);
   }
 }
 
-// Lógica Principal: Intercalação (1 Antigo / 1 Recente)
+// Renderiza a lista na ordem natural da playlist (mais recentes para mais antigos)
 function renderFeed(episodes) {
-  const unwatched = episodes.filter(ep => !watchedIds.has(ep.id));
-  const watchedCount = episodes.length - unwatched.length;
+  const watchedCount = episodes.filter(ep => watchedIds.has(ep.id)).length;
+  statsContainer.innerText = `Assistidos: ${watchedCount} de ${episodes.length} episódios da 5ª Temporada`;
 
-  statsContainer.innerText = `Assistidos: ${watchedCount} de ${episodes.length} episódios carregados`;
-
-  // Separar em duas pilhas
-  const antigos = [...unwatched].reverse(); // Do mais antigo pro mais novo
-  const recentes = [...unwatched];          // Do mais novo pro mais antigo
-
-  const intercalados = [];
-  const total = unwatched.length;
-  let iAntigo = 0;
-  let iRecente = 0;
-
-  for (let k = 0; k < total; k++) {
-    if (k % 2 === 0 && iAntigo < antigos.length) {
-      // Prioridade / Tipo: Antigo
-      const ep = antigos[iAntigo++];
-      intercalados.push({ ...ep, tag: "ANTIGO" });
-    } else if (iRecente < recentes.length) {
-      // Prioridade / Tipo: Recente
-      const ep = recentes[iRecente++];
-      intercalados.push({ ...ep, tag: "RECENTE" });
-    }
-  }
-
-  // Renderizar Cards
   feedContainer.innerHTML = "";
 
-  if (intercalados.length === 0) {
-    feedContainer.innerHTML = `<p class="text-center text-zinc-500 py-8">🎉 Você está em dia com os episódios!</p>`;
+  if (episodes.length === 0) {
+    feedContainer.innerHTML = `<p class="text-center text-zinc-500 py-8">Nenhum episódio encontrado.</p>`;
     return;
   }
 
-  intercalados.forEach(ep => {
+  episodes.forEach(ep => {
+    const isWatched = watchedIds.has(ep.id);
     const card = document.createElement("div");
-    card.className = "flex bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 shadow p-2 gap-3 items-center";
 
-    const isAntigo = ep.tag === "ANTIGO";
-    const badgeColor = isAntigo ? "bg-amber-500/20 text-amber-400 border-amber-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    // Estilo adaptado para quando estiver assistido vs pendente
+    const cardBg = isWatched ? "bg-zinc-900/40 opacity-60 border-zinc-800/50" : "bg-zinc-900 border-zinc-800";
+    const btnStyle = isWatched ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-emerald-600 hover:text-white";
+
+    card.className = `flex bg-zinc-900 rounded-lg overflow-hidden border p-3 gap-3 items-center transition-all ${cardBg}`;
 
     card.innerHTML = `
-      <a href="https://www.youtube.com/watch?v=${ep.id}" target="_blank" class="relative flex-shrink-0 w-28 h-16 rounded overflow-hidden">
+      <a href="https://www.youtube.com/watch?v=${ep.id}" target="_blank" class="relative flex-shrink-0 w-32 h-20 rounded overflow-hidden bg-zinc-800">
         <img src="${ep.thumb}" class="w-full h-full object-cover">
       </a>
-      <div class="flex-grow min-w-0">
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${badgeColor}">${ep.tag}</span>
-        </div>
-        <h2 class="text-xs font-semibold text-zinc-200 truncate" title="${ep.title}">${ep.title}</h2>
+      <div class="flex-grow min-w-0 py-1">
+        <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-snug break-words">${ep.title}</h2>
       </div>
-      <button onclick="toggleWatched('${ep.id}')" class="px-3 py-2 text-xs font-bold bg-zinc-800 hover:bg-emerald-600 hover:text-white text-zinc-400 rounded-lg transition-colors">
+      <button onclick="toggleWatched('${ep.id}')" class="flex-shrink-0 px-3 py-3 text-sm font-bold rounded-lg transition-colors ${btnStyle}" title="${isWatched ? 'Marcar como não assistido' : 'Marcar como assistido'}">
         ✓
       </button>
     `;
