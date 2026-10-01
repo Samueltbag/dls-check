@@ -1,5 +1,5 @@
 // Configurações e Chaves
-const PLAYLIST_ID = "UUvA3GfI6aT8J79YcTjO3Aiw"; // ID da Playlist de Uploads do Desce a Letra Show (UU + final do channel ID)
+const PLAYLIST_ID = "PLaUTz-QvZS37jBnXDKxwUPnK3FN1EnNQC"; // ID da Playlist de Uploads do Desce a Letra Show (UU + final do channel ID)
 const STORAGE_KEY_API = "dls_yt_api_key";
 const STORAGE_KEY_WATCHED = "dls_watched_ids";
 
