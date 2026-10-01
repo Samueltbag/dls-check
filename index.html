@@ -20,17 +20,17 @@
         <h1 class="text-lg font-bold text-red-500">DLS Check</h1>
       </div>
       <div class="flex gap-2">
-        <button id="btn-config" class="px-3 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300">Config API</button>
-        <button id="btn-sync" class="px-3 py-1 text-xs bg-red-600 hover:bg-red-500 rounded font-semibold">Atualizar</button>
+        <button id="btn-config" class="px-2.5 py-1 text-xs bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300">Config API</button>
+        <button id="btn-sync" class="px-2.5 py-1 text-xs bg-red-600 hover:bg-red-500 rounded font-semibold">Atualizar</button>
       </div>
     </div>
 
-    <!-- Filtros de Status -->
-    <div class="flex gap-1.5 text-xs overflow-x-auto pb-1 no-scrollbar">
-      <button data-filter="all" class="filter-btn px-3 py-1 rounded-full bg-red-600 text-white font-medium flex-shrink-0">Todos</button>
-      <button data-filter="watching" class="filter-btn px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 font-medium flex-shrink-0">⏳ Assistindo</button>
-      <button data-filter="unstarted" class="filter-btn px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 font-medium flex-shrink-0">○ Não Iniciados</button>
-      <button data-filter="completed" class="filter-btn px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 font-medium flex-shrink-0">✓ Concluídos</button>
+    <!-- Filtros de Status (Ajustados para caberem sem rolar) -->
+    <div class="grid grid-cols-4 gap-1 text-[11px] sm:text-xs">
+      <button data-filter="all" class="filter-btn py-1.5 rounded-lg bg-red-600 text-white font-medium text-center">Todos</button>
+      <button data-filter="watching" class="filter-btn py-1.5 rounded-lg bg-zinc-800 text-zinc-400 font-medium text-center">Assistindo</button>
+      <button data-filter="unstarted" class="filter-btn py-1.5 rounded-lg bg-zinc-800 text-zinc-400 font-medium text-center">Não Iniciados</button>
+      <button data-filter="completed" class="filter-btn py-1.5 rounded-lg bg-zinc-800 text-zinc-400 font-medium text-center">Concluídos</button>
     </div>
   </header>
 
