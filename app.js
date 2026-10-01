@@ -1,10 +1,12 @@
 // Configurações e Chaves
-const PLAYLIST_ID = "PLaUTz-QvZS37jBnXDKxwUPnK3FN1EnNQC"; // Playlist da Quinta Temporada do DLS
+const PLAYLIST_ID = "PLaUTz-QvZS37jBnXDKxwUPnK3FN1EnNQC"; // Playlist da 5ª Temporada
 const STORAGE_KEY_API = "dls_yt_api_key";
-const STORAGE_KEY_WATCHED = "dls_watched_ids";
+const STORAGE_KEY_STATUS = "dls_ep_status_map"; // Guarda os status: 'watching' | 'completed'
 
 let apiKey = localStorage.getItem(STORAGE_KEY_API) || "";
-let watchedIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY_WATCHED) || "[]"));
+// Objeto com mapeamento: { "videoId": "watching" | "completed" }
+let statusMap = JSON.parse(localStorage.getItem(STORAGE_KEY_STATUS) || "{}");
+let currentFilter = "all"; // 'all' | 'unstarted' | 'watching' | 'completed'
 
 // Elementos DOM
 const feedContainer = document.getElementById("feed");
@@ -13,7 +15,21 @@ const statsContainer = document.getElementById("stats");
 document.getElementById("btn-config").addEventListener("click", promptApiKey);
 document.getElementById("btn-sync").addEventListener("click", fetchEpisodes);
 
-// Solicita a API Key na primeira execução ou ao clicar em Config
+// Configura os botões de filtro no topo
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    document.querySelectorAll(".filter-btn").forEach(b => {
+      b.classList.remove("bg-red-600", "text-white");
+      b.classList.add("bg-zinc-800", "text-zinc-400");
+    });
+    e.target.classList.remove("bg-zinc-800", "text-zinc-400");
+    e.target.classList.add("bg-red-600", "text-white");
+
+    currentFilter = e.target.dataset.filter;
+    if (window.currentEpisodes) renderFeed(window.currentEpisodes);
+  });
+});
+
 function promptApiKey() {
   const key = prompt("Informe sua YouTube Data API v3 Key:", apiKey);
   if (key !== null) {
@@ -23,26 +39,25 @@ function promptApiKey() {
   }
 }
 
-// Alterna o status de assistido e salva localmente
-function toggleWatched(videoId) {
-  if (watchedIds.has(videoId)) {
-    watchedIds.delete(videoId);
+// Alterna o status do episódio em ciclo: não iniciado -> em andamento -> concluído -> não iniciado
+function cycleStatus(videoId) {
+  const current = statusMap[videoId];
+  if (!current) {
+    statusMap[videoId] = "watching";
+  } else if (current === "watching") {
+    statusMap[videoId] = "completed";
   } else {
-    watchedIds.add(videoId);
+    delete statusMap[videoId];
   }
-  localStorage.setItem(STORAGE_KEY_WATCHED, JSON.stringify(Array.from(watchedIds)));
-  // Atualiza apenas a interface mantendo os dados em memória
-  if (window.currentEpisodes) {
-    renderFeed(window.currentEpisodes);
-  } else {
-    fetchEpisodes();
-  }
+
+  localStorage.setItem(STORAGE_KEY_STATUS, JSON.stringify(statusMap));
+  if (window.currentEpisodes) renderFeed(window.currentEpisodes);
 }
 
-// Busca TODOS os episódios da playlist do YouTube (tratando paginação)
+// Busca episódios da API
 async function fetchEpisodes() {
   if (!apiKey) {
-    statsContainer.innerHTML = `⚠ Cadastre sua <b>API Key</b> do Google Cloud no botão acima para começar.`;
+    statsContainer.innerHTML = `⚠ Cadastre sua <b>API Key</b> do Google Cloud para começar.`;
     return;
   }
 
@@ -52,7 +67,6 @@ async function fetchEpisodes() {
     let allItems = [];
     let nextPageToken = "";
 
-    // Loop para buscar todas as páginas de vídeos da playlist
     do {
       const pageParam = nextPageToken ? `&pageToken=${nextPageToken}` : "";
       const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${PLAYLIST_ID}&maxResults=50${pageParam}&key=${apiKey}`;
@@ -85,25 +99,49 @@ async function fetchEpisodes() {
   }
 }
 
-// Renderiza a lista na ordem natural da playlist (mais recentes para mais antigos)
+// Renderiza o feed aplicando os filtros e estilos visuais
 function renderFeed(episodes) {
-  const watchedCount = episodes.filter(ep => watchedIds.has(ep.id)).length;
-  statsContainer.innerText = `Assistidos: ${watchedCount} de ${episodes.length} episódios da 5ª Temporada`;
+  const completedCount = episodes.filter(ep => statusMap[ep.id] === "completed").length;
+  const watchingCount = episodes.filter(ep => statusMap[ep.id] === "watching").length;
+
+  statsContainer.innerText = `Assistindo: ${watchingCount} | Concluídos: ${completedCount} de ${episodes.length}`;
+
+  // Filtragem da lista
+  let filtered = episodes.filter(ep => {
+    const status = statusMap[ep.id] || "unstarted";
+    if (currentFilter === "watching") return status === "watching";
+    if (currentFilter === "completed") return status === "completed";
+    if (currentFilter === "unstarted") return status === "unstarted";
+    return true; // 'all'
+  });
 
   feedContainer.innerHTML = "";
 
-  if (episodes.length === 0) {
-    feedContainer.innerHTML = `<p class="text-center text-zinc-500 py-8">Nenhum episódio encontrado.</p>`;
+  if (filtered.length === 0) {
+    feedContainer.innerHTML = `<p class="text-center text-zinc-500 py-8">Nenhum episódio nesta categoria.</p>`;
     return;
   }
 
-  episodes.forEach(ep => {
-    const isWatched = watchedIds.has(ep.id);
+  filtered.forEach(ep => {
+    const status = statusMap[ep.id] || "unstarted";
     const card = document.createElement("div");
 
-    // Estilo adaptado para quando estiver assistido vs pendente
-    const cardBg = isWatched ? "bg-zinc-900/40 opacity-60 border-zinc-800/50" : "bg-zinc-900 border-zinc-800";
-    const btnStyle = isWatched ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-emerald-600 hover:text-white";
+    let cardBg = "bg-zinc-900 border-zinc-800";
+    let btnStyle = "bg-zinc-800 text-zinc-400 hover:bg-zinc-700";
+    let btnIcon = "○";
+    let badgeHtml = "";
+
+    if (status === "watching") {
+      cardBg = "bg-amber-950/20 border-amber-500/40 shadow-sm";
+      btnStyle = "bg-amber-500 text-zinc-950 hover:bg-amber-400 font-extrabold";
+      btnIcon = "⏳";
+      badgeHtml = `<span class="inline-block bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded mb-1">ASSISTINDO</span>`;
+    } else if (status === "completed") {
+      cardBg = "bg-zinc-900/40 opacity-60 border-zinc-800/50";
+      btnStyle = "bg-emerald-600 text-white hover:bg-emerald-500";
+      btnIcon = "✓";
+      badgeHtml = `<span class="inline-block bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-1.5 py-0.5 rounded mb-1">CONCLUÍDO</span>`;
+    }
 
     card.className = `flex bg-zinc-900 rounded-lg overflow-hidden border p-3 gap-3 items-center transition-all ${cardBg}`;
 
@@ -112,10 +150,11 @@ function renderFeed(episodes) {
         <img src="${ep.thumb}" class="w-full h-full object-cover">
       </a>
       <div class="flex-grow min-w-0 py-1">
+        ${badgeHtml}
         <h2 class="text-xs sm:text-sm font-semibold text-zinc-100 leading-snug break-words">${ep.title}</h2>
       </div>
-      <button onclick="toggleWatched('${ep.id}')" class="flex-shrink-0 px-3 py-3 text-sm font-bold rounded-lg transition-colors ${btnStyle}" title="${isWatched ? 'Marcar como não assistido' : 'Marcar como assistido'}">
-        ✓
+      <button onclick="cycleStatus('${ep.id}')" class="flex-shrink-0 px-3 py-3 text-sm font-bold rounded-lg transition-colors ${btnStyle}" title="Alternar status">
+        ${btnIcon}
       </button>
     `;
     feedContainer.appendChild(card);
