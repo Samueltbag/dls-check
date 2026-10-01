@@ -1,0 +1,15 @@
+{
+  "short_name": "DLS Check",
+  "name": "Desce a Letra Show Check",
+  "icons": [
+    {
+      "src": "https://www.youtube.com/s/desktop/f7193f2f/img/favicon_144x144.png",
+      "type": "image/png",
+      "sizes": "144x144"
+    }
+  ],
+  "start_url": ".",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "display": "standalone"
+}
