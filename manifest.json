@@ -3,24 +3,17 @@
   "name": "DLS Check",
   "icons": [
     {
-      "src": "https://www.youtube.com/s/desktop/f7193f2f/img/favicon_144x144.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/1384/1384060.png",
       "type": "image/png",
-      "sizes": "144x144"
+      "sizes": "192x192"
     },
     {
-      "src": "https://www.youtube.com/s/desktop/f7193f2f/img/favicon_144x144.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/1384/1384060.png",
       "type": "image/png",
-      "sizes": "192x192",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://www.youtube.com/s/desktop/f7193f2f/img/favicon_144x144.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "purpose": "any maskable"
+      "sizes": "512x512"
     }
   ],
-  "start_url": "./",
+  "start_url": "./index.html",
   "background_color": "#121212",
   "theme_color": "#121212",
   "display": "standalone"
